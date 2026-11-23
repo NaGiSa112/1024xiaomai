@@ -33,7 +33,8 @@ from ultralytics import YOLO  # noqa: E402
 def parse_args():
     p = argparse.ArgumentParser()
     p.add_argument("--weights", required=True)
-    p.add_argument("--source", required=True, help="图片目录")
+    p.add_argument("--source", default=None, help="图片目录")
+    p.add_argument("--source-list", default=None, help="图片路径列表 txt（与 --source 二选一，交叉验证用）")
     p.add_argument("--out", required=True, help="txt 输出目录")
     p.add_argument("--imgsz", type=int, default=1024)
     p.add_argument("--conf", type=float, default=0.001, help="mAP 评测建议 0.001(保留全部候选)")
@@ -49,19 +50,31 @@ def parse_args():
 
 def main():
     a = parse_args()
-    src = Path(a.source)
-    if not src.is_absolute():
-        src = ROOT / src
     out = Path(a.out)
     if not out.is_absolute():
         out = ROOT / out
     out.mkdir(parents=True, exist_ok=True)
 
-    imgs = sorted([p for p in src.iterdir() if p.suffix.lower() in (".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff")])
+    if a.source_list:
+        # 交叉验证：给一个 txt（每行一个图片路径），只推理这些图
+        lp = Path(a.source_list)
+        if not lp.is_absolute():
+            lp = ROOT / lp
+        imgs = [Path(l.strip()) for l in lp.read_text(encoding="utf-8").splitlines() if l.strip()]
+        src_desc = str(lp)
+    else:
+        if not a.source:
+            sys.exit("必须给 --source 或 --source-list")
+        src = Path(a.source)
+        if not src.is_absolute():
+            src = ROOT / src
+        imgs = sorted([p for p in src.iterdir() if p.suffix.lower() in (".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff")])
+        src_desc = str(src)
+
     if a.limit:
         imgs = imgs[: a.limit]
     if not imgs:
-        sys.exit(f"没有图片: {src}")
+        sys.exit(f"没有图片: {src_desc}")
 
     model = YOLO(str(ROOT / a.weights if not os.path.isabs(a.weights) else a.weights))
     print(f"[predict] {len(imgs)} 张 | imgsz={a.imgsz} conf={a.conf} iou={a.iou} tta={a.tta} max_det={a.max_det}")
@@ -109,7 +122,7 @@ def main():
     stats = np.array(stats) if stats else np.array([0])
     summary = {
         "weights": a.weights,
-        "source": str(src),
+        "source": src_desc,
         "out": str(out),
         "images": len(imgs),
         "boxes": int(n_box),

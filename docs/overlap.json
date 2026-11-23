@@ -1,0 +1,209 @@
+{
+  "gwhd_library": 3373,
+  "splits": {
+    "train": {
+      "total": 800,
+      "exact_md5": 0,
+      "same_image_mad<6": 434,
+      "ratio": 0.542,
+      "examples": [
+        {
+          "img": "0003.png",
+          "gwhd": "f94718a9b.jpg",
+          "mad": 0.57,
+          "dhash": 0
+        },
+        {
+          "img": "0005.png",
+          "gwhd": "3badddaf9.jpg",
+          "mad": 0.59,
+          "dhash": 0
+        },
+        {
+          "img": "0008.png",
+          "gwhd": "147830115.jpg",
+          "mad": 0.57,
+          "dhash": 0
+        },
+        {
+          "img": "0009.png",
+          "gwhd": "d9c104dce.jpg",
+          "mad": 0.51,
+          "dhash": 0
+        },
+        {
+          "img": "0010.png",
+          "gwhd": "9983d297c.jpg",
+          "mad": 0.58,
+          "dhash": 0
+        },
+        {
+          "img": "0011.png",
+          "gwhd": "950935ac1.jpg",
+          "mad": 0.59,
+          "dhash": 1
+        },
+        {
+          "img": "0012.png",
+          "gwhd": "afb240f5a.jpg",
+          "mad": 0.51,
+          "dhash": 0
+        },
+        {
+          "img": "0014.png",
+          "gwhd": "f6d969b95.jpg",
+          "mad": 0.81,
+          "dhash": 0
+        },
+        {
+          "img": "0015.png",
+          "gwhd": "92f3b252f.jpg",
+          "mad": 0.52,
+          "dhash": 0
+        },
+        {
+          "img": "0019.png",
+          "gwhd": "91fefb8e4.jpg",
+          "mad": 0.54,
+          "dhash": 0
+        }
+      ]
+    },
+    "val": {
+      "total": 100,
+      "exact_md5": 0,
+      "same_image_mad<6": 58,
+      "ratio": 0.58,
+      "examples": [
+        {
+          "img": "0001.png",
+          "gwhd": "6a7cbd408.jpg",
+          "mad": 0.5,
+          "dhash": 0
+        },
+        {
+          "img": "0002.png",
+          "gwhd": "9f1d83913.jpg",
+          "mad": 0.52,
+          "dhash": 0
+        },
+        {
+          "img": "0003.png",
+          "gwhd": "c40c32697.jpg",
+          "mad": 0.51,
+          "dhash": 1
+        },
+        {
+          "img": "0004.png",
+          "gwhd": "ab9e2d432.jpg",
+          "mad": 0.88,
+          "dhash": 0
+        },
+        {
+          "img": "0005.png",
+          "gwhd": "8301297cc.jpg",
+          "mad": 0.56,
+          "dhash": 0
+        },
+        {
+          "img": "0007.png",
+          "gwhd": "29f8a1f30.jpg",
+          "mad": 0.9,
+          "dhash": 0
+        },
+        {
+          "img": "0008.png",
+          "gwhd": "0594af5a7.jpg",
+          "mad": 0.55,
+          "dhash": 0
+        },
+        {
+          "img": "0009.png",
+          "gwhd": "efb3d3fb9.jpg",
+          "mad": 0.51,
+          "dhash": 0
+        },
+        {
+          "img": "0011.png",
+          "gwhd": "1951b2916.jpg",
+          "mad": 0.5,
+          "dhash": 0
+        },
+        {
+          "img": "0014.png",
+          "gwhd": "58bea1a2d.jpg",
+          "mad": 1.0,
+          "dhash": 0
+        }
+      ]
+    },
+    "test": {
+      "total": 100,
+      "exact_md5": 0,
+      "same_image_mad<6": 47,
+      "ratio": 0.47,
+      "examples": [
+        {
+          "img": "0003.png",
+          "gwhd": "a8eb74244.jpg",
+          "mad": 0.85,
+          "dhash": 0
+        },
+        {
+          "img": "0009.png",
+          "gwhd": "ecc61faef.jpg",
+          "mad": 0.5,
+          "dhash": 0
+        },
+        {
+          "img": "0010.png",
+          "gwhd": "f0665430d.jpg",
+          "mad": 0.51,
+          "dhash": 0
+        },
+        {
+          "img": "0013.png",
+          "gwhd": "cea58b404.jpg",
+          "mad": 0.5,
+          "dhash": 0
+        },
+        {
+          "img": "0015.png",
+          "gwhd": "5b13b8160.jpg",
+          "mad": 1.03,
+          "dhash": 3
+        },
+        {
+          "img": "0016.png",
+          "gwhd": "60b440046.jpg",
+          "mad": 0.51,
+          "dhash": 0
+        },
+        {
+          "img": "0017.png",
+          "gwhd": "6939a6e17.jpg",
+          "mad": 0.6,
+          "dhash": 0
+        },
+        {
+          "img": "0023.png",
+          "gwhd": "2443092e6.jpg",
+          "mad": 0.89,
+          "dhash": 2
+        },
+        {
+          "img": "0024.png",
+          "gwhd": "1cf002747.jpg",
+          "mad": 0.51,
+          "dhash": 0
+        },
+        {
+          "img": "0025.png",
+          "gwhd": "f4faff69b.jpg",
+          "mad": 1.31,
+          "dhash": 0
+        }
+      ]
+    }
+  }
+}

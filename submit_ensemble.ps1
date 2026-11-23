@@ -1,4 +1,4 @@
-# Build a submission from the 5 fold models: multi-scale + NMS fusion.
+﻿# Build a submission from the 5 fold models: multi-scale + NMS fusion.
 # Usage: .\submit_ensemble.ps1 -Tag ens5_ms -Scales 896 1024 1280 -NmsIou 0.6
 param(
     [string]$Tag = "ens5_ms",

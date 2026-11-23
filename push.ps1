@@ -1,4 +1,4 @@
-# 一键推送：. \push.ps1            （推当前分支到 origin）
+﻿# 一键推送：. \push.ps1            （推当前分支到 origin）
 #          . \push.ps1 -Msg "说明"  （先提交全部改动再推送）
 param([string]$Msg)
 

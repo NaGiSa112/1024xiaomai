@@ -37,6 +37,7 @@ def parse_args():
     p.add_argument("--project", default="runs/detect")
     p.add_argument("--name", default=None)
     p.add_argument("--resume", action="store_true")
+    p.add_argument("--resume-from", default=None, help="从指定 checkpoint 续训（如 runs/detect/x/weights/last.pt）")
     p.add_argument("--patience", type=int, default=30)
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--cache", default="none", choices=["none", "ram", "disk"])
@@ -52,6 +53,7 @@ def parse_args():
     p.add_argument("--mixup", type=float, default=0.0)
     p.add_argument("--copy-paste", type=float, default=0.0)
     p.add_argument("--exist-ok", action="store_true")
+    p.add_argument("--fraction", type=float, default=1.0, help="只用数据集的一部分(预训练/快速实验)")
     p.add_argument("--no-val", action="store_true")
     return p.parse_args()
 
@@ -63,7 +65,15 @@ def main():
 
     model = YOLO(str(ROOT / a.model) if not os.path.isabs(a.model) else a.model)
 
-    if a.resume:
+    if a.resume_from:
+        # 从指定 checkpoint 续训（ultralytics 会沿用该 checkpoint 里保存的 args）
+        rp = Path(a.resume_from) if os.path.isabs(a.resume_from) else ROOT / a.resume_from
+        if not rp.exists():
+            sys.exit(f"续训权重不存在: {rp}")
+        print(f"[resume-from] {rp}")
+        model = YOLO(str(rp))
+        a.resume = True
+    elif a.resume:
         # 续训: 指向最近一次 run 的 last.pt
         cands = sorted((ROOT / a.project).glob("*/weights/last.pt"), key=lambda p: p.stat().st_mtime)
         if not cands:
@@ -108,6 +118,7 @@ def main():
         verbose=True,
         deterministic=True,
         pretrained=True,
+        fraction=a.fraction,
     )
 
     # 汇总

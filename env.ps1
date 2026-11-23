@@ -34,6 +34,23 @@ if (Test-Path (Join-Path $GIT_CMD "git.exe")) {
     $env:PATH = "$GIT_CMD;$env:PATH"
 }
 
+# git 的 openssl 后端读不了中文路径的 CA 文件（本机 git 走 openssl 后端,
+# 因为 schannel 这台机器上报 SEC_E_NO_CREDENTIALS）, 复制一份到 ASCII 临时目录
+$GIT_CA = Join-Path $WHEAT_ROOT "tools\git\ucrt64\etc\ssl\certs\ca-bundle.crt"
+if (Test-Path $GIT_CA) {
+    $CA_DIR = Join-Path $env:TEMP "wheat_ca"
+    $CA_DST = Join-Path $CA_DIR "ca-bundle.crt"
+    if (-not (Test-Path $CA_DST)) {
+        New-Item -ItemType Directory -Force -Path $CA_DIR | Out-Null
+        Copy-Item $GIT_CA $CA_DST -Force
+    }
+    $env:GIT_SSL_CAINFO = $CA_DST
+}
+
+# 本机走 WinINET 系统代理 127.0.0.1:7897, libcurl 不读注册表, 显式给出
+$env:HTTP_PROXY  = "http://127.0.0.1:7897"
+$env:HTTPS_PROXY = "http://127.0.0.1:7897"
+
 Write-Host "[env] root   : $env:WHEAT_ROOT"
 Write-Host "[env] python : $env:WHEAT_PY"
 Write-Host "[env] pkgs   : $env:PYTHONPATH"

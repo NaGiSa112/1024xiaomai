@@ -60,6 +60,22 @@ function Invoke-Train($name, $model, $data, $epochs, $imgsz, $batch, $extra) {
 
 Write-Host "[long] start $(Get-Date -Format 'HH:mm:ss')  deadline $dl  remaining $(Remaining) h"
 
+# ---------------------------------------------------------------- 显存自适应
+# 实测基准：yolo11s@1024 bs12 = 11.1 GB；激活显存近似 ∝ 参数量 × 分辨率² × batch
+#   yolo11l 参数量/FLOPs ≈ 2.7× s；768² = 0.5625 × 1024²
+#   => l@768 单图 ≈ 1.5 × s@1024 单图；l@1024 单图 ≈ 2.7 × s@1024 单图
+$freeMB = 0
+try { $freeMB = [int](((nvidia-smi --query-gpu=memory.free --format=csv,noheader,nounits) | Select-Object -First 1).Trim()) } catch { }
+Write-Host "[vram] 启动时空闲 $freeMB MB"
+
+$capPre, $capFine = 6, 4
+if ($freeMB -ge 20000) { $capPre, $capFine = 14, 10 }
+elseif ($freeMB -ge 16000) { $capPre, $capFine = 12, 8 }
+elseif ($freeMB -ge 12000) { $capPre, $capFine = 8, 6 }
+if ($PreBatch -gt $capPre) { Write-Host "[vram] 预训练 batch $PreBatch -> $capPre"; $PreBatch = $capPre }
+if ($FineBatch -gt $capFine) { Write-Host "[vram] 微调 batch $FineBatch -> $capFine"; $FineBatch = $capFine }
+Write-Host "[vram] 本次使用: 预训练 bs=$PreBatch  微调 bs=$FineBatch"
+
 # ---------------------------------------------------------------- 0 体检
 Banner "0 体检"
 $cleanYaml = "data_external/gwhd_clean.yaml"

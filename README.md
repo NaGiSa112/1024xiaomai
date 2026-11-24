@@ -1,139 +1,133 @@
-# 小麦麦穗目标检测（Wheat-SOD）· 讯飞算法赛
+# 小麦麦穗目标检测
 
-单类别目标检测：田间实拍 **1024×1024** 小麦图像，识别并定位麦穗（`wheat_ear`）。
-官方指标 **mAP@0.5**（每天最多 3 次提交，取历史最优）。
-
-- 赛题：<https://challenge.xfyun.cn/topic/info?type=Wheat-SOD-train>
-- 数据：train 800 / val 100 / test 100（test 无标注，仅推理）
-- 任务难点：密集**中小目标** —— 平均 42.7 框/图（最多 190），框宽中位数 0.068（1024 图上约 **68 px**）
+> 用深度学习在田间实拍图像里自动找出每一株麦穗 —— 单类别目标检测的完整工程实现。
+> 讯飞 AI 开发者大赛「小麦麦穗目标检测挑战赛」赛题，评测指标 **mAP@0.5**。
 
 ---
 
-## 1. 结果
+## 项目简介
 
-### 1.1 干净口径（可信）
+小麦抽穗期的人工计数（数穗、测密度）费时费力，也是产量预估的关键环节。
+本项目用目标检测模型自动完成**麦穗定位**，输入一张 1024×1024 的田间图像，输出图中每个麦穗的边界框与置信度。
 
-| 实验 | 模型 | 数据 | mAP@0.5 | mAP@0.5:0.95 | 说明 |
-|---|---|---|---|---|---|
-| 5 折第 1 折 | yolo11s @1024 | 720 训练 / 182 折外 | **0.9108** | 0.5135 | 无外部数据、无预训练的诚实基线 |
-| GWHD 同源预训练 | yolo11l @768 | GWHD-clean 2834 张 | **0.8812** | 0.4596 | **未接触任何赛题数据**，仅靠外部数据 |
+| 项 | 内容 |
+|---|---|
+| 任务 | 单类别目标检测（`wheat_ear`） |
+| 数据 | 官方 800 训练 / 100 验证 / 100 测试（测试集无标注，仅推理） |
+| 图像 | 1024×1024，田间实拍，光照与密度差异大 |
+| 难点 | **密集中小目标**：平均 42.7 框/图（最多 190），框宽中位数仅 0.068（约 68 px） |
+| 指标 | mAP@0.5（完整 PR 曲线的平均精度） |
 
-### 1.2 含污染（900 全量训练，val 被训练过，只看收敛）
+## 方法
 
-| 实验 | 配置 | mAP@0.5 | mAP@0.5:0.95 |
+```
+官方数据 800 张 ─┐
+                ├─► 划分/合并（800、900 全量、5 折分层）─► 训练（YOLO11 n/s/m/l/x）
+外部 GWHD 数据 ──┘                                          │
+   （同源筛查后 2834 张）                                     ▼
+                                              ┌──────── 多模型 × 多尺度推理 ────────┐
+                                              │  896 / 1024 / 1280 三尺度          │
+                                              │  NMS / WBF 融合 + 框尺寸校准        │
+                                              └────────────────┬───────────────────┘
+                                                               ▼
+                                                  submit.zip（官方格式 txt）
+```
+
+关键设计：
+
+1. **分辨率**：图像原生 1024，训练与推理都保持 1024 级别，避免下采样丢小目标；
+2. **外部数据**：发现官方数据与公开数据集 GWHD **同源**，用筛除测试集同源样本后的 2834 张做预训练，再回官方数据微调（对齐标注口径）；
+3. **集成**：单模型已接近饱和，改为**跨骨干（s/m/l/x）× 跨分辨率（1024/1280）** 多成员融合，配合多尺度推理；
+4. **工程**：训练/推理/评测/打包提交全链路脚本化，支持断点续训、显存自适应 batch、提交格式自动校验。
+
+## 结果
+
+### 可信口径（模型没见过评测图）
+
+| 实验 | 模型 | 数据 | mAP@0.5 | mAP@0.5:0.95 |
+|---|---|---|---|---|
+| 5 折交叉验证（第 1 折） | YOLO11s @1024 | 720 训练 / 182 折外 | **0.9108** | 0.5135 |
+| 纯外部数据预训练 | YOLO11l @768 | GWHD 2834 张 | **0.8812** | 0.4596 |
+
+> 第二条尤其能说明问题：**完全没接触过赛题数据**，仅靠公开数据集就把 mAP@0.5 做到 0.88 —— 这也验证了两者同源的判断。
+
+### 完整数据训练（验证集参与训练，仅反映收敛）
+
+| 模型 | 配置 | mAP@0.5 | mAP@0.5:0.95 |
 |---|---|---|---|
-| 主力模型 | yolo11l @1024，预训练→900 微调 140 ep | 0.9880 | 0.7011 |
+| YOLO11l | 同源预训练 → 900 张微调 140 epoch | 0.9880 | 0.7011 |
 
-完整实验表见 [`docs/实验记录.md`](docs/实验记录.md)（由 `scripts/make_experiment_log.py` 自动生成）。
+全量实验表（含每个 run 的 P/R/耗时）见 [`docs/实验记录.md`](docs/实验记录.md)，
+线上提交与分数见 [`docs/提交记录.md`](docs/提交记录.md)。
 
-### 1.3 线上提交
+## 仓库结构
 
-见 [`docs/提交记录.md`](docs/提交记录.md)。
+```
+├─ train.py / train.ps1          # 训练入口（支持断点续训、显存自适应）
+├─ run_long.ps1                  # 长训练编排：预训练 → 微调 → 集成
+├─ run_overnight.ps1             # 跨夜多模型训练 + 多成员集成
+├─ run_folds.ps1                 # 5 折交叉验证
+├─ sandbox_compat.py             # 运行环境兼容层
+├─ data/
+│  ├─ wheat.yaml                 # 官方 800/100 划分
+│  ├─ wheat_full900.yaml         # 900 张全量（训练+验证）
+│  └─ folds/                     # 按目标密度分层的 5 折划分
+├─ scripts/
+│  ├─ check_env.py               # 环境与数据集自检
+│  ├─ predict.py                 # 单模型推理 → 提交格式
+│  ├─ predict_ensemble.py        # 多模型 × 多尺度融合（NMS / WBF）
+│  ├─ eval_submission.py         # 用导出的 txt 独立复算 mAP@0.5
+│  ├─ oof_eval.py                # 5 折 OOF 评测
+│  ├─ make_submission.py         # 格式校验 + 打包 submit.zip
+│  ├─ make_folds.py              # 分层切分 5 折
+│  ├─ model_soup.py              # 多 checkpoint 权重平均
+│  ├─ make_experiment_log.py     # 自动生成实验记录表
+│  ├─ check_overlap.py           # 与公开数据集同源核查
+│  ├─ build_gwhd_clean.py        # 生成"干净"外部数据集
+│  └─ add_pkg.py                 # 依赖安装（替代 pip）
+└─ docs/
+   ├─ 赛题要求.md                # 规则要点
+   ├─ 实验记录.md                # 自动生成的实验表
+   ├─ 提交记录.md                # 线上分数记录
+   ├─ 重叠检查.md                # 同源证据与合规筛查
+   ├─ 环境说明.md                # 环境搭建细节
+   └─ 工程笔记.md                # 踩坑与设计取舍
+```
 
-## 2. 关键发现：赛题数据与 GWHD 同源
-
-用 **dHash 召回 + 像素 MAD 确认**（`scripts/check_overlap.py`）比对 1000 张赛题图与 3373 张 GWHD 图：
-
-| 划分 | 总数 | 同图重编码（MAD<6/255） | 占比 |
-|---|---|---|---|
-| train | 800 | 434 | **54.2%** |
-| val | 100 | 58 | **58.0%** |
-| test | 100 | 47 | **47.0%** |
-
-- 不是"相似领域"，是**同一批图的重编码版本**（像素差 1~2/255）；
-- 但**标注口径不同**（同图：赛题 64 框 vs GWHD 53 框）⇒ 外部数据只适合**预训练**，最终必须回到赛题数据微调；
-- **合规**：与 test 同源的 47 张（及 train/val 同源的 492 张）**全部剔除**，训练集不含任何测试图信息。见 `scripts/build_gwhd_clean.py` 与 `docs/重叠检查.md`。
-
-## 3. 快速开始
+## 快速开始
 
 ```powershell
-# 环境（本机 pip 不可用，见 docs/环境说明.md）
+# 1) 环境
 Set-ExecutionPolicy -Scope Process Bypass -Force
 . .\env.ps1
-& $env:WHEAT_PY scripts\check_env.py            # 环境 + 数据自检
+& $env:WHEAT_PY scripts\check_env.py        # 自检：环境 + 数据 + 推理链路
 
-# 训练（示例：GWHD 预训练 → 900 微调，全流程）
+# 2) 训练（外部数据预训练 → 官方数据微调 → 自动集成）
 .\run_long.ps1 -Deadline "08:00"
 
-# 跨夜多模型 + 集成
-.\run_overnight.ps1 -Deadline "08:40"
-
-# 推理 / 集成 / 打包提交
+# 3) 推理并生成提交文件
 & $env:WHEAT_PY scripts\predict.py --weights runs\detect\long_y11l_1024\weights\best.pt `
-    --source data\dataset\images\test --out preds\test_l --imgsz 1024 --conf 0.001
-& $env:WHEAT_PY scripts\predict_ensemble.py --weights a.pt b.pt `
-    --source data\dataset\images\test --out preds\ens --imgsz 896 1024 1280 --fuse nms --nms-iou 0.6
-& $env:WHEAT_PY scripts\make_submission.py --pred preds\ens --tag ens
+    --source data\dataset\images\test --out preds\test --imgsz 1024 --conf 0.001
+& $env:WHEAT_PY scripts\make_submission.py --pred preds\test --tag my_submit
 ```
 
-## 4. 提交格式（官方要求）
+提交格式（官方要求）：`submit.zip` 内 `submit/` 目录，每张测试图一个同名 txt，
+每行 `<class_id> <xc> <yc> <w> <h> <conf>`（归一化坐标，空格分隔）。
 
-`submit.zip` → `submit/` → 与测试图**同名的 txt**（UTF-8），每行：
+## 环境
 
-```
-<class_id> <x_center> <y_center> <width> <height> <confidence>
-```
-
-归一化坐标、空格分隔、`class_id=0`。`make_submission.py` 会校验：字段数、坐标范围、class_id、文件名齐全、无 BOM、无 CRLF。
-
-## 5. 仓库结构
-
-```
-├─ env.ps1                  # 环境激活（PYTHONPATH / 编码 / certifi / 便携 git）
-├─ train.py  train.ps1      # 训练入口（--resume-from / --save-period / --fraction）
-├─ run_long.ps1             # 长训练编排：预训练 → 微调 → 集成（显存自适应）
-├─ run_overnight.ps1        # 跨夜：4 模型 → soup → 6 成员集成 → 2 个提交候选
-├─ run_folds.ps1            # 5 折交叉验证
-├─ sandbox_compat.py        # 沙箱兼容层（必须在 ultralytics 之前 import）
-├─ data/
-│  ├─ wheat.yaml            # 800/100 官方划分
-│  ├─ wheat_full900.yaml    # 900 全量（train+val）
-│  └─ folds/                # 5 折分层划分（按框密度）
-├─ scripts/
-│  ├─ check_env.py          # 环境 + 数据集自检
-│  ├─ viz_labels.py         # 标注可视化
-│  ├─ predict.py            # 单模型推理 → 提交格式 txt
-│  ├─ predict_ensemble.py   # 多模型 × 多尺度 → NMS / WBF
-│  ├─ eval_submission.py    # 用 txt 复算 mAP@0.5（独立校验导出）
-│  ├─ oof_eval.py           # 5 折 OOF 评测
-│  ├─ make_submission.py    # 校验 + 打包 submit.zip
-│  ├─ make_folds.py         # 按密度分层切 5 折
-│  ├─ model_soup.py         # 多 checkpoint 权重平均
-│  ├─ make_experiment_log.py# 自动生成 docs/实验记录.md
-│  ├─ check_overlap.py      # 赛题数据 vs GWHD 同源核查
-│  ├─ build_gwhd_clean.py   # 剔除同源图，生成干净外部集
-│  ├─ fetch_gwhd.py / fetch_gwhd_more.py  # 外部数据下载
-│  ├─ prepare_gwhd.py       # parquet → YOLO
-│  └─ add_pkg.py            # pip 替代安装器
-└─ docs/
-   ├─ 赛题要求.md           # 规则原文要点 + 落地校验清单
-   ├─ 环境说明.md           # 为什么不能用 pip、三项沙箱限制
-   ├─ 重叠检查.md           # 同源证据与合规筛查
-   ├─ 实验记录.md           # 自动生成的实验表
-   ├─ 提交记录.md           # 线上提交与分数
-   └─ 冲刺96_三轮计划.md    # 冲 96 分的路线与止损线
-```
-
-## 6. 工程决策（踩过的坑）
-
-| 问题 | 处理 |
+| 项 | 版本 |
 |---|---|
-| 本机 `pip install` 必失败（沙箱禁止临时目录删除/重命名） | 预解包包树 `pkgs/` + `PYTHONPATH`；新包用 `scripts/add_pkg.py` |
-| `multiprocessing` 被禁（命名管道 → WinError 5） | `sandbox_compat.py` 把池换成串行，`workers=0` |
-| 工作区路径含中文 | `.ps1` 一律用 `$PSScriptRoot`；`.ps1` 必须带 UTF-8 BOM（否则 GBK 解码报语法错）；`cv2.imread` 换 `np.fromfile + imdecode` |
-| Python 默认 CA 缺中间证书 | `env.ps1` 设 `SSL_CERT_FILE` 指向 certifi |
-| git 直连失败 | 走系统代理 + openssl 后端 + 把 CA 复制到 ASCII 路径（`env.ps1` 自动做） |
-| 提交 txt 换行符 | 强制 LF，`make_submission.py` 兜底归一化 CRLF |
-| 评测用完整 PR 曲线 | 推理 `conf=0.001`、`max_det=1000`；**不开翻转 TTA**（实测掉点） |
+| GPU | RTX 4090D 24 GB |
+| Python | 3.12.14 |
+| PyTorch | 2.6.0 + CUDA 12.4 |
+| Ultralytics | 8.4.203 |
 
-## 7. 数据与合规
+> 本项目环境不走 `pip`（宿主沙箱会拦截 pip 的临时目录重命名），依赖以预解包包树 + `PYTHONPATH` 挂载。
+> 细节见 [`docs/环境说明.md`](docs/环境说明.md)。
 
-- 赛题数据：800/100/100，全部 1024×1024，单类，标签 0 坏行
-- 外部数据：GWHD（同源），剔除 539 张同源图后 **2834 张**用于预训练
-- **测试集只用于推理**：不训练、不伪标签、不使用任何与测试图对应的外部标注
+## 数据与合规说明
 
-## 8. 环境
-
-- RTX 4090D 24 GB / i9-14900KF / Windows / Python 3.12.14
-- torch 2.6.0+cu124 + ultralytics 8.4.203（`pkgs/` 预解包，未入库）
-- 详细说明：[`docs/环境说明.md`](docs/环境说明.md)
+- 官方数据：800 训练 / 100 验证 / 100 测试，单类别，标签为 YOLO 归一化格式；
+- 外部数据：公开数据集 GWHD，经**像素级同源筛查**后剔除与官方数据重复的 539 张（其中 **47 张与测试图同源**），保留 2834 张用于预训练；
+- **测试集仅用于推理**：不参与训练、不做伪标签、不使用任何与测试图对应的外部标注。筛查过程见 [`docs/重叠检查.md`](docs/重叠检查.md)。

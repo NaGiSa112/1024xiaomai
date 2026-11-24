@@ -54,6 +54,7 @@ def parse_args():
     p.add_argument("--copy-paste", type=float, default=0.0)
     p.add_argument("--exist-ok", action="store_true")
     p.add_argument("--fraction", type=float, default=1.0, help="只用数据集的一部分(预训练/快速实验)")
+    p.add_argument("--save-period", type=int, default=-1, help="每 N 个 epoch 存一次 epoch*.pt（做 model soup 用）")
     p.add_argument("--no-val", action="store_true")
     return p.parse_args()
 
@@ -115,6 +116,7 @@ def main():
         amp=True,
         val=not a.no_val,
         plots=True,
+        save_period=a.save_period,
         verbose=True,
         deterministic=True,
         pretrained=True,

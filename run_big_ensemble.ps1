@@ -72,7 +72,7 @@ Banner "2 在 OOF 上搜索融合参数"
 # ---------------------------------------------------------------- 3 大集成跑 test
 Banner "3 全部成员跑 test"
 $members = @()
-foreach ($n in @("long_y11l_1024", "x900_1024", "l1280_900", "m900_1024", "l_v2_900",
+foreach ($n in @("long_y11l_1024", "x900_1024", "l1280_900", "l_v2_1280", "m900_1024", "l_v2_900",
         "fold0_y11s_1024", "fold1_y11s_1024", "fold2_y11s_1024", "fold3_y11s_1024", "fold4_y11s_1024")) {
     $w = "runs\detect\$n\weights\best.pt"
     if (Test-Path $w) {

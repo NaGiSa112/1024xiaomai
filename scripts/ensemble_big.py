@@ -127,7 +127,7 @@ def main():
 
 
 def run(args):
-    members = json.loads(Path(args.members).read_text(encoding="utf-8"))
+    members = json.loads(Path(args.members).read_text(encoding="utf-8-sig"))
     if args.source_list:
         lp = Path(args.source_list)
         if not lp.is_absolute():

@@ -68,7 +68,7 @@ else { Write-Host "[skip] l_v2@1280" }
 
 # ---------------------------------------------------------------- 3 OOF 调参 + 大集成
 Banner "OOF 调参 + 大集成"
-& "$PSScriptRoot\run_big_ensemble.ps1" -Scales 896 1024
+& "$PSScriptRoot\run_big_ensemble.ps1" -Scales @(896, 1024)
 
 Banner "结束"
 Get-ChildItem submissions\*.zip -ErrorAction SilentlyContinue | Sort-Object LastWriteTime |

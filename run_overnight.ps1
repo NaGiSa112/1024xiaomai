@@ -1,4 +1,4 @@
-﻿# 跨夜长项目 v3：00:05 -> 09:50（用户 8 点起床上课，可跑到 10 点）
+﻿# 跨夜长项目 v3.1：00:05 -> 11:00（用户可给到 11 点）
 #
 # 关键变化（v2 -> v3）：
 #   1) 预训练数据换成 **gwhd_clean_v2（7770 张，8.6× 赛题 900 张）**
@@ -21,12 +21,12 @@
 #   .\run_overnight.ps1 -Deadline "09:50"
 #   .\run_overnight.ps1 -Deadline "09:50" -SkipD    # 不做加料版 l
 param(
-    [string]$Deadline = "09:50",
+    [string]$Deadline = "11:00",
     [switch]$SkipWait,
     [switch]$SkipM,
     [switch]$SkipD,
     [int]$XPreEpochs = 12,
-    [int]$XEpochs = 70,
+    [int]$XEpochs = 80,
     [int]$L1280Epochs = 50,
     [int]$MEpochs = 60,
     [int]$LPreEpochs = 10,
@@ -117,6 +117,18 @@ if (-not $SkipD -and (Remaining) -gt 2.0) {
 }
 else { Write-Host "[skip] 加料版 l" }
 
+# ---------------------------------------------------------------- 5.5 补齐 fold1（顺带产出第 2 折的干净 OOF）
+if ((Remaining) -gt 0.8 -and -not (Test-Path "runs\detect\fold1_y11s_1024\weights\best.pt")) {
+    $partial = Get-ChildItem "runs\detect" -Directory -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -like "fold1_y11s_1024_partial_ep*" } |
+        Sort-Object { [int]($_.Name -replace '.*_ep', '') } | Select-Object -Last 1
+    if ($partial) {
+        Banner "5.5 补齐 fold1（从 $($partial.Name) 续训到 100）"
+        & $env:WHEAT_PY train.py --resume-from "$($partial.FullName)\weights\last.pt"
+    }
+}
+else { Write-Host "[skip] fold1 补齐（已完成或时间不足）" }
+
 # ---------------------------------------------------------------- 6 soup + 集成
 Banner "6/6 soup + 集成"
 $epochs = Get-ChildItem "runs\detect\x900_1024\weights" -Filter "epoch*.pt" -ErrorAction SilentlyContinue | Sort-Object Name
@@ -126,7 +138,8 @@ if ($epochs.Count -ge 2) {
 }
 
 $weights = @()
-foreach ($n in @("long_y11l_1024", "x900_1024", "l1280_900", "m900_1024", "l_v2_900", "fold0_y11s_1024")) {
+foreach ($n in @("long_y11l_1024", "x900_1024", "l1280_900", "m900_1024", "l_v2_900",
+        "fold0_y11s_1024", "fold1_y11s_1024", "fold2_y11s_1024", "fold3_y11s_1024", "fold4_y11s_1024")) {
     if ($n -and (Test-Path "runs\detect\$n\weights\best.pt")) { $weights += "runs\detect\$n\weights\best.pt" }
 }
 if (Test-Path "weights\x_soup.pt") { $weights += "weights/x_soup.pt" }
